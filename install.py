@@ -8,7 +8,7 @@ def loader():
 class ObserverIPInstaller(ExtensionInstaller):
     def __init__(self):
         super(ObserverIPInstaller, self).__init__(
-                version="0.1",
+                version="0.2mw",
                 name='observerip',
                 description='driver for Ambient ObserverIP',
                 author="David Malick",
@@ -40,8 +40,9 @@ class ObserverIPInstaller(ExtensionInstaller):
                     }
                 },
                 files=[('bin/user', ['bin/user/observerip.py']),
-                       ('util/apache/conf.d/weatherstation-intercept.conf',['util/apache/conf.d/weatherstation-intercept.conf']),
-                       ('util/apache/weatherstation/updateweatherstation.php',['util/apache/weatherstation/updateweatherstation.php'])
+                       ('util/apache/conf.d/weatherstation-intercept.conf',
+                        ['util/apache/conf.d/weatherstation-intercept.conf']),
+                       ('util/apache/weatherstation/updateweatherstation.php',
+                        ['util/apache/weatherstation/updateweatherstation.php'])
                        ]
                 )
-

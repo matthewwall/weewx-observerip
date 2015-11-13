@@ -32,7 +32,7 @@ import weewx.drivers
 from weeutil.weeutil import to_int, to_float, to_bool
 
 DRIVER_NAME = 'ObserverIP'
-DRIVER_VERSION = "0.1"
+DRIVER_VERSION = "0.2mw"
 
 if weewx.__version__ < "3":
     raise weewx.UnsupportedFeature("weewx 3 is required, found %s" %

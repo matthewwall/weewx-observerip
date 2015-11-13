@@ -1,29 +1,38 @@
 observerip - weewx driver for the Ambient ObserverIP
 
 INSTALLATION
-1)
-    Run the setup command from the WEEWX_ROOT directory.
 
-    	setup.py install --extension weewx-observerip.tar.gz
+1) Run the extension installer:
 
-2) modify weewx.conf:
+wee_extension --install weewx-observerip.tar.gz
 
-   [Station]
-	station_type = ObserverIP
+2) Choose the observerip driver:
 
+wee_config --reconfigure --driver=user.observerip
 
-3) restart weewx
+3) Start weewx
+
+sudo /etc/init.d/weewx start
 
 
 NOTES
+
+This driver has two modes: direct or indirect.  Direct mode reads data directly
+from the ObserverIP station.  Indirect mode reads data from a local file that
+is updated by a separate process that sniffs the network for ObserverIP data.
+
 The ObserverIP must be on the same network segment as the weewx server. UDP
-broadcasts must be able to get from one to the other
+broadcasts must be able to get from one to the other.
 
+In order to run in indirect mode:
+- change direct in the [ObserverIP] section of weewx.conf to false
+- copy util/apache/conf.d/weatherstation-intercept.conf to the apache
+  configuration directory, /etc/httpd/conf.d on most systems
+- make sure the path in that file is reasonable
+- create directory /var/www/weatherstation
+- copy util/apache/weatherstation/updateweatherstation.php
+  to /var/www/weatherstation
+- edit both the updateweatherstation.php and weewx.conf
+- set xferfile in each to point to the same file
 
-In order to run in indirect mode change direct in the [ObserverIP] section of
-weewx.conf to false. Copy util/apache/conf.d/weatherstation-intercept.conf
-to the apache conifguration directory, /etc/httpd/conf.d on most systems. Make sure
-the path in that file is reasonable. Create directory /var/www/weatherstation.
-Copy util/apache/weatherstation/updateweatherstation.php to /var/www/weatherstation.
-Edit both the updateweatherstation.php and weewx.conf. Set xferfile in each to point
-to the same file. The file must be writable by the web server and readable by weewx.
+The file must be writable by the web server and readable by weewx.
