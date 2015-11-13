@@ -242,8 +242,6 @@ class OpserverIPHardware():
     def setnetworksettings(self):
         response = urllib2.urlopen("http://%s/bscsetting.htm" % self.ipaddr(),
                                    self.dict_to_param(calibdata) + "&Apply=Apply")
-        print response.read()
-
     def setnetworkdefault(self):
         #print 'Not implemented'
         pass
@@ -273,7 +271,6 @@ class OpserverIPHardware():
             del settings['WRFreq']
         response = urllib2.urlopen("http://%s/station.htm" % self.ipaddr(),
                                    self.dict_to_param(settings) + "&Apply=Apply")
-        print response.read()
 
     def data(self):
         return self.page_to_dict('http://%s/livedata.htm' % self.ipaddr())
@@ -356,56 +353,6 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         }
     }
 
-    DIRECTMAP = {
-        'wh2600USA_v2.2.0': {
-            'dateTime': ('epoch', to_int),
-            'inTemp': ('inTemp', to_float),
-            'inHumidity': ('inHumi', to_float),
-            'pressure': ('AbsPress', to_float),
-            'outTemp': ('outTemp', to_float),
-            'outHumidity': ('outHumi', to_float),
-            'windDir': ('windir', to_float),
-            'windSpeed': ('avgwind', to_float),
-            'windGust': ('gustspeed', to_float),
-            'radiation': ('solarrad', to_float),
-            'UV': ('uvi', to_float),
-            'rain': ('rainofyearly', to_float),
-            'inTempBatteryStatus': ('inBattSta', ObserverIPDriver.norm),
-            'outTempBatteryStatus': ('outBattSta1', ObserverIPDriver.norm)
-        },
-        'default': {
-            'dateTime': ('epoch', to_int),
-            'inTemp': ('inTemp', to_float),
-            'inHumidity': ('inHumi', to_float),
-            'pressure': ('AbsPress', to_float),
-            'outTemp': ('outTemp', to_float),
-            'outHumidity': ('outHumi', to_float),
-            'windDir': ('windir', to_float),
-            'windSpeed': ('avgwind', to_float),
-            'windGust': ('gustspeed', to_float),
-            'radiation': ('solarrad', to_float),
-            'UV': ('uvi', to_float),
-            'rain': ('rainofyearly', to_float),
-        },
-        'wu': {
-            'dateTime': ('epoch', to_int),
-            'outTemp': ('tempf', to_float),
-            'outHumidity': ('humidity', to_float),
-            'dewpoint': ('dewptf', to_float),
-            'windchill': ('windchillf', to_float),
-            'windDir': ('winddir', to_float),
-            'windSpeed': ('windspeedmph', to_float),
-            'windGust': ('windgustmph', to_float),
-            'rain': ('yearlyrainin', to_float),
-            'radiation': ('solarradiation', to_float),
-            'UV': ('UV', to_float),
-            'inTemp': ('indoortempf', to_float),
-            'inHumidity': ('indoorhumidity', to_float),
-            'pressure': ('baromin', to_float),
-            'txBatteryStatus': ('lowbatt', to_float),
-        }
-    }
-
     def __init__(self, **stn_dict):
         loginf("version is %s" % DRIVER_VERSION)
 
@@ -481,9 +428,9 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
                 self.map = self.directmap[self.obshardware.version()]
             else:
                 loginf("Unknown firmware version: %s" % self.obshardware.version())
-                self.map = self.DIRECTMAP['default']
+                self.map = self.directmap['default']
         else:
-            self.map = self.DIRECTMAP['wu']
+            self.map = self.directmap['wu']
             if self.check_calibration:
                 self.obshardware = OpserverIPHardware(**stn_dict)
                 if self.chkunits(self.expected_units):
