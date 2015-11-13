@@ -31,7 +31,7 @@ class ObserverIPInstaller(ExtensionInstaller):
                             'UVGain': '1.00',
                             'SolarGain': '1.00',
                             'WindGain': '1.00',
-                            'RelOffset': '0.00',
+#                            'RelOffset': '0.00',
                             'luxwm2': '126.7',
                             'outHumiOffset': '0',
                             'outTempOffset': '0.0',

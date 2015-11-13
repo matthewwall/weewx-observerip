@@ -17,6 +17,9 @@ sudo /etc/init.d/weewx start
 
 NOTES
 
+Relative Pressure Offset in the calibration tab of the station setup must
+be set to 0.
+
 This driver has two modes: direct or indirect.  Direct mode reads data directly
 from the ObserverIP station.  Indirect mode reads data from a local file that
 is updated by a separate process that sniffs the network for ObserverIP data.
@@ -36,3 +39,6 @@ In order to run in indirect mode:
 - set xferfile in each to point to the same file
 
 The file must be writable by the web server and readable by weewx.
+
+To see the configuration options:
+  wee_device --defaultconfig
