@@ -494,10 +494,21 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         return None
 
     def get_data_direct(self):
-        data = self.obshardware.data()
-        # added rounding, the epoch is already to large but will this make it more consistent
-        data['epoch'] = int(time.time() + 0.5 )
-        return data
+        data = dict()
+        for count in range(self.max_tries):
+            try:
+                data = self.obshardware.data()
+                # added rounding, the epoch is already to large but this
+                # will make it more consistent
+                data['epoch'] = int(time.time() + 0.5 )
+                return data
+            except socket.error, e:
+                logerr('direct retrieval failed attempt %d of %d: %s' %
+                       (count + 1, self.max_tries, e))
+                time.sleep(self.retry_wait)
+        else:
+            logerr('direct retrieval failed after %d tries' % self.max_tries)
+        return None
 
     def parse_page(self, data):
         packet = dict()
