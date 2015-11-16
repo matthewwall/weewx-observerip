@@ -19,7 +19,7 @@ import weewx.drivers
 from weeutil.weeutil import to_int, to_float, to_bool
 
 DRIVER_NAME = 'ObserverIP'
-DRIVER_VERSION = "0.2mw"
+DRIVER_VERSION = "0.3mw"
 
 if weewx.__version__ < "3":
     raise weewx.UnsupportedFeature("weewx 3 is required, found %s" %
@@ -411,7 +411,6 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         self.dup_interval = float(stn_dict.get('dup_interval', 5))
         self.max_tries = int(stn_dict.get('max_tries', 5))
         self.retry_wait = int(stn_dict.get('retry_wait', 2))
-        self.directtx = to_bool(stn_dict.get('direct', False))
         self.mode = stn_dict.get('mode', 'direct')
         self.check_calibration = to_bool(stn_dict.get('check_calibration',False))
         self.set_calibration = to_bool(stn_dict.get('set_calibration', False))
