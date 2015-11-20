@@ -6,11 +6,11 @@ To use this driver, see readme.txt
 """
 
 from __future__ import with_statement
-import syslog
 import time
 import io
 import socket
 import sys
+import syslog
 import urllib
 import urllib2
 
@@ -19,7 +19,7 @@ import weewx.drivers
 from weeutil.weeutil import to_int, to_float, to_bool
 
 DRIVER_NAME = 'ObserverIP'
-DRIVER_VERSION = "0.3mw"
+DRIVER_VERSION = '0.4mw'
 
 if weewx.__version__ < "3":
     raise weewx.UnsupportedFeature("weewx 3 is required, found %s" %
@@ -73,7 +73,7 @@ class OpserverIPHardware():
     }
 
     def __init__(self, **stn_dict):
-        self.versionmap = {'wh2600USA_v2.2.0',('3.0.0')}
+        self.versionmap = {'wh2600USA_v2.2.0':'3.0.0'}
         self.hostname = stn_dict.get('hostname',None)
         self.max_tries = int(stn_dict.get('max_tries', 5))
         self.retry_wait = int(stn_dict.get('retry_wait', 2))
