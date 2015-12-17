@@ -16,10 +16,10 @@ import urllib2
 
 import weewx
 import weewx.drivers
-from weeutil.weeutil import to_int, to_float, to_bool
+from weeutil.weeutil import to_bool
 
 DRIVER_NAME = 'ObserverIP'
-DRIVER_VERSION = '0.4mw'
+DRIVER_VERSION = '0.5mw'
 
 if weewx.__version__ < "3":
     raise weewx.UnsupportedFeature("weewx 3 is required, found %s" %
@@ -40,6 +40,18 @@ def logcrt(msg):
 
 def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
+
+def to_int(x):
+    try:
+        return int(x)
+    except ValueError:
+        return None
+
+def to_float(x):
+    try:
+        return float(x)
+    except ValueError:
+        return None
 
 def loader(config_dict, _):
     return ObserverIPDriver(**config_dict[DRIVER_NAME])
