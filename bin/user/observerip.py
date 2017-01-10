@@ -429,8 +429,8 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         self.check_calibration = to_bool(
             stn_dict.get('check_calibration', False))
         self.set_calibration = to_bool(stn_dict.get('set_calibration', False))
-        self.lastrain = None
-        self.lastpacket = 0
+        self.last_rain_total = None
+        self.last_datetime = 0
 
         if self.mode == 'direct':
             self._station = OpserverIPHardware(**stn_dict)
@@ -527,29 +527,27 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         if data is not None:
             packet['usUnits'] = weewx.US
             for obs in self.map:
-                try:
+                if self.map[obs][0] in data:
                     packet[obs] = self.map[obs][1](data[self.map[obs][0]])
-                except KeyError:
-                    loginf("packet missing %s" % obs)
-                    packet = dict()
-                    break
-
-            if packet:
-                currrain = packet['rain']
-                if self.lastrain is not None:
-                    if currrain >= self.lastrain:
-                        packet['rain'] = currrain - self.lastrain
+                else:
+                    logdbg("no %s in data" % obs)
+        if packet:
+            if 'rain' in packet:
+                rain_total = packet['rain']
+                if self.last_rain_total is not None:
+                    if rain_total >= self.last_rain_total:
+                        packet['rain'] = rain_total - self.last_rain_total
                 else:
                     del packet['rain']
-                self.lastrain = currrain
+                self.last_rain_total = rain_total
 
-                if self.lastpacket >= packet['dateTime']:
-                    loginf("duplicate packet or out of order packet")
-                    packet = dict()
-                else:
-                    logdbg("packet interval %s" % (int(packet['dateTime']) - self.lastpacket))
-                    self.lastpacket = packet['dateTime']
-        
+            if self.last_datetime >= packet['dateTime']:
+                loginf("duplicate packet or out of order packet")
+                packet = dict()
+            else:
+                logdbg("packet interval %s" %
+                       (int(packet['dateTime']) - self.last_datetime))
+                self.last_datetime = packet['dateTime']
         return packet
 
     @staticmethod
@@ -560,8 +558,8 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         stcalib = self._station.getcalibration()
         for i in calibdata:
             if to_float(calibdata[i]) != to_float(stcalib[i]):
-                logerr("calibration error: %s is expexted to be %f but is %f" % 
-                       (i, to_float(calibdata[i]), to_float(stcalib[i])))
+                logerr("calibration error: %s is expexted to be %f but is %f"
+                       % (i, to_float(calibdata[i]), to_float(stcalib[i])))
                 return True
         return False
 
