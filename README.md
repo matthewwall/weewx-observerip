@@ -40,22 +40,24 @@ To run in indirect mode:
 
 - set the mode in weewx.conf
 
+    ```
     [ObserverIP]
         driver = user.observerip
         mode = indirect
         ...
+    ```
 
 - install the apache intercept configuration
 
-    sudo cp util/apache/conf.d/weatherstation-intercept.conf /etc/apache/conf.d
+    ```sudo cp util/apache/conf.d/weatherstation-intercept.conf /etc/apache/conf.d```
 
 - create the weatherstation directory directory
 
-    sudo mkdir /var/www/html/weatherstation
+    ```sudo mkdir /var/www/html/weatherstation```
 
 - install the php script
 
-    sudo cp util/apache/weatherstation/updateweatherstation.php /var/www/html/weatherstation
+    ```sudo cp util/apache/weatherstation/updateweatherstation.php /var/www/html/weatherstation```
 
 ## Notes
 
