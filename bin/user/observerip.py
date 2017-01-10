@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Copyright 2015 David Malick
-# minor modifications by Matthew Wall
+#   minor modifications by Matthew Wall 2016-2017
 """weewx driver for Ambient ObserverIP"""
 
 from __future__ import with_statement
@@ -32,11 +32,19 @@ def logdbg(msg):
 def loginf(msg):
     logmsg(syslog.LOG_INFO, msg)
 
-def logcrt(msg):
-    logmsg(syslog.LOG_CRIT, msg)
-
 def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
+
+
+def loader(config_dict, _):
+    return ObserverIPDriver(**config_dict[DRIVER_NAME])
+
+def confeditor_loader():
+    return ObserverIPConfEditor()
+
+def configurator_loader(_):
+    return ObserverIPConfigurator()
+
 
 def to_int(x):
     try:
@@ -50,39 +58,30 @@ def to_float(x):
     except ValueError:
         return None
 
-def loader(config_dict, _):
-    return ObserverIPDriver(**config_dict[DRIVER_NAME])
 
-def confeditor_loader():
-    return ObserverIPConfEditor()
-
-def configurator_loader(_):
-    return ObserverIPConfigurator()
-
-
-class OpserverIPHardware():
+class ObserverIPStation():
     """Interface to communicate directly with ObserverIP"""
 
     UDP_PORT = 25122
     MESSAGE = "ASIXXISA\x00"
 
-    CALIBRATIONBOUND = {'RainGain': (to_float, 0.1, 5.0),
-                        'AbsOffset': (to_float, -23.62, 23.62),
-                        'outTempOffset': (to_float, -18.0, 18.0),
-                        'windDirOffset': (to_float, -180.0, 180.0),
-                        'luxwm2': (to_float, 1.0, 1000.0),
-                        'SolarGain': (to_float, 0.1, 5.0),
-                        'WindGain': (to_float, 0.1, 5.0),
-                        'inTempOffset': (to_float, -18.0, 18.0),
-                        'UVGain': (to_float, 0.1, 5.0),
-                        'outHumiOffset': (to_float, -10.0, 10.0),
-                        'inHumiOffset': (to_float, -10.0, 10.0),
-                        'RelOffset': (to_float, -23.62, 23.62)
-    }
+    CALIBRATIONBOUND = {
+        'RainGain': (to_float, 0.1, 5.0),
+        'AbsOffset': (to_float, -23.62, 23.62),
+        'outTempOffset': (to_float, -18.0, 18.0),
+        'windDirOffset': (to_float, -180.0, 180.0),
+        'luxwm2': (to_float, 1.0, 1000.0),
+        'SolarGain': (to_float, 0.1, 5.0),
+        'WindGain': (to_float, 0.1, 5.0),
+        'inTempOffset': (to_float, -18.0, 18.0),
+        'UVGain': (to_float, 0.1, 5.0),
+        'outHumiOffset': (to_float, -10.0, 10.0),
+        'inHumiOffset': (to_float, -10.0, 10.0),
+        'RelOffset': (to_float, -23.62, 23.62)}
 
     def __init__(self, **stn_dict):
         self.versionmap = {'wh2600USA_v2.2.0': '3.0.0'}
-        self.hostname = stn_dict.get('hostname',None)
+        self.hostname = stn_dict.get('hostname', None)
         self.max_tries = int(stn_dict.get('max_tries', 5))
         self.retry_wait = int(stn_dict.get('retry_wait', 2))
         self.infopacket = None
@@ -92,13 +91,11 @@ class OpserverIPHardware():
             raise Exception('ObserverIP network probe failed')
 
     def infoprobe(self):
-        if self.hostname is None:
-            udp_addr = "255.255.255.255"
-        else:
-            udp_addr = self.hostname
+        udp_addr = self.hostname
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket
-        if self.hostname is None:
+        if udp_addr is None:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            udp_addr = "255.255.255.255"
         for count in range(self.max_tries):
             try:
                 sock.sendto(self.MESSAGE, (udp_addr, self.UDP_PORT))
@@ -109,7 +106,7 @@ class OpserverIPHardware():
                 logerr("socket timeout %d of %d" % (count+1, self.max_tries))
                 time.sleep(self.retry_wait)
             except socket.gaierror:
-                logerr("%s: incorrect hostname or IP" % self.hostname)
+                logerr("%s: incorrect hostname or IP" % udp_addr)
                 return None
         else:
             logerr("probe failed after %d tries" % self.max_tries)
@@ -286,7 +283,7 @@ class OpserverIPHardware():
             "http://%s/station.htm" % self.ipaddr(),
             self.dict_to_param(settings) + "&Apply=Apply")
 
-    def data(self):
+    def get_data(self):
         return self.page_to_dict('http://%s/livedata.htm' % self.ipaddr())
 
     def getcalibration(self):
@@ -433,7 +430,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         self.last_datetime = 0
 
         if self.mode == 'direct':
-            self._station = OpserverIPHardware(**stn_dict)
+            self._station = ObserverIPStation(**stn_dict)
             if self.chkunits(self.expected_units):
                 logerr("calibration error: %s is expexted to be %f but is %f" %
                        (i, to_float(calibdata[i]), to_float(stcalib[i])))
@@ -447,7 +444,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         else:
             self.map = self.directmap['wu']
             if self.check_calibration:
-                self._station = OpserverIPHardware(**stn_dict)
+                self._station = ObserverIPStation(**stn_dict)
                 if self.chkunits(self.expected_units):
                     raise Exception("Station units not set correctly")
 
@@ -471,7 +468,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
             if self.mode == 'direct':
                 data = self.get_data_direct()
             else:
-                data = self.get_data()
+                data = self.get_data_from_file()
             packet = dict()
             packet.update(self.parse_page(data))
             if packet:
@@ -486,7 +483,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
             else:
                 time.sleep(self.dup_interval)
 
-    def get_data(self):
+    def get_data_from_file(self):
         data = dict()
         for count in range(self.max_tries):
             try:
@@ -508,7 +505,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         data = dict()
         for count in range(self.max_tries):
             try:
-                data = self._station.data()
+                data = self._station.get_data()
                 # added rounding, the epoch is already to large but this
                 # will make it more consistent
                 data['epoch'] = int(time.time() + 0.5 )
@@ -585,53 +582,54 @@ class ObserverIPConfEditor(weewx.drivers.AbstractConfEditor):
     # The driver to use:
     driver = user.observerip
 
-    # hostname - hostname or IP address of the ObserverIP, not required
-
-    # mode determines the method for obtaining data from the station
-    # 	   direct   - communicate directly with the station
-    #	   indirect - get station data from the CGI intermediary
+    # There are two modes for obtaining data from the station:
+    #   direct   - communicate directly with the station
+    #	indirect - get station data from file created by the CGI intermediary
     mode = direct
 
-    # poll_interval
-    #	mode = direct   - The time (in seconds) between LOOP packets (should be 16)
-    #	mode = indirect - Time to wait for new packet ( 17 is a good value)
+    # How often to query for data, in seconds.  The station updates data no
+    # faster than every 16 seconds.
     poll_interval = 16
 
-    # dup_interval
-    #	mode = direct   - time to wait if there is an error getting a packet
-    #	mode = indirect - subsequent time to wait if new packet has not arived after poll_interval
+    # Specify the hostname or IP address of the ObserverIP.  If not specified,
+    # the driver will find the station by broadcasting on the local network.
+    #hostname = 192.168.0.10
+
+    # How long to wait in case of error:
+    #	direct   - time to wait if there is an error getting a packet
+    #	indirect - time to wait if new data has not arrived after poll_interval
     dup_interval = 2
 
-    # xferfile
-    #	mode = direct   - unused
-    #	mode = indirect - file where the CGI script puts the data from the observerip
-    xferfile = /path/to/transfer/file
+    # Specify the file where the CGI script puts the data.  Only for indirect.
+    xferfile = /var/tmp/observer_data.txt
 
-    # retry_wait - time to wait after failed network attempt
+    # How often to wait after a failed network connection, in seconds
+    #retry_wait = 2
 
-    # check_calibration - make sure the station calibration is as expected
+    # Verify that the station calibration is as expected
     check_calibration = true
 
-    # set_calibration - set calibration in station if it is not as expected
-    #                   only meaningful if check_calibration is true
+    # Calibrate the station if the calibration is not as expected.  Only
+    # meaningful if check_calibration is enabled.
     set_calibration = false
 
-    # The calibration the driver expects from the station, only useful
-    # if check_calibration is set. Items that are not set, are not checked.
+    # The items in the following section are used to calibrate the station
+    # when set_calibration is enabled.  Only items specified in this section
+    # will be checked and calibrated.
     [[calibration]]
-	 RainGain=1.00
-	 windDirOffset=0
-	 inHumiOffset=0
-	 AbsOffset=0.00
-	 UVGain=1.00
-	 SolarGain=1.00
-	 WindGain=1.00
+	 RainGain = 1.00
+	 windDirOffset = 0
+	 inHumiOffset = 0
+	 AbsOffset = 0.0
+	 UVGain = 1.0
+	 SolarGain = 1.0
+	 WindGain = 1.0
          # RelOffset should be set to 0 in indirect mode
-	 #RelOffset=0.00
-	 luxwm2=126.7
-	 outHumiOffset=0
-	 outTempOffset=0.0
-	 inTempOffset=0.0
+	 #RelOffset = 0.0
+	 luxwm2 = 126.7
+	 outHumiOffset = 0
+	 outTempOffset = 0.0
+	 inTempOffset = 0.0
 """
 
 
@@ -645,19 +643,16 @@ class ObserverIPConfigurator(weewx.drivers.AbstractConfigurator):
     def add_options(self, parser):
         super(ObserverIPConfigurator, self).add_options(parser)
 
-        parser.add_option("--findobserver", dest="findobserver",
-                          action="store_true",
+        parser.add_option("--find", dest="find", action="store_true",
                           help="Find the observerIP on the network")
-        parser.add_option("--getdata", dest="getdata",
-                          action="store_true",
+        parser.add_option("--get-data", dest="getdata", action="store_true",
                           help="print weather data from the station")
-        parser.add_option("--defaultconfig", dest="defconf",
-                          action="store_true",
+        parser.add_option("--default-config", dest="cfg", action="store_true",
                           help="show the default configuration for weewx.conf")
 
     def do_options(self, options, parser, config_dict, prompt):
         driver_dict = config_dict['ObserverIP']
-        station = OpserverIPHardware(**driver_dict)
+        station = ObserverIPStation(**driver_dict)
 
         if options.findobserver:
             sys.stdout.write("http://%s\n" % station.ipaddr())
@@ -669,28 +664,13 @@ class ObserverIPConfigurator(weewx.drivers.AbstractConfigurator):
                 pass
 
         if options.getdata:
-            data = station.data()
+            data = station.get_data()
             for obs in data:
                 sys.stdout.write("%s=%s\n" % (obs, data[obs]))
 
-        if options.defconf:
+        if options.cfg:
             stconf = ObserverIPConfEditor()
             print stconf.default_stanza
-
-    @staticmethod
-    def areyousure(prompt=True, msg=''):
-        if prompt:
-            print msg
-            ans = ''
-            while ans not in ['y', 'n']:
-                ans = raw_input("Are you sure you wish to proceed (y/n)? ")
-                if ans == 'y':
-                    return True
-                elif ans == 'n':
-                    print 'Aborting'
-                    return False
-        else:
-            return True
 
 
 # =============================================================================
@@ -700,16 +680,13 @@ class ObserverIPConfigurator(weewx.drivers.AbstractConfigurator):
 if __name__ == "__main__":
     usage = """%prog [options]"""
     import optparse
+    import weeutil.weeutil
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('--xferfile', dest='xferfile',
-                      help='Transfer file')
+                      help='name of transfer file with station data')
     (options, args) = parser.parse_args()
 
-    import weeutil.weeutil
-    if options.xferfile is None:
-        mode='direct'
-    else:
-        mode='indirect'
+    mode = 'direct' if options.xferfile is None else 'indirect'
     station = ObserverIPDriver(mode=mode, xferfile=options.xferfile)
     for p in station.genLoopPackets():
         print weeutil.weeutil.timestamp_to_string(p['dateTime']), p
