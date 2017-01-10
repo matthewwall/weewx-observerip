@@ -477,10 +477,9 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
             if packet:
                 yield packet
                         
-                if self.mode == 'direct':
-                    sleeptime = self.poll_interval
-                else:
-                    sleeptime = self.poll_interval - time.time() + int(packet['dateTime'])
+                sleeptime = self.poll_interval
+                if self.mode != 'direct':
+                    sleeptime += int(packet['dateTime']) - time.time()
                 if ( sleeptime < 0 ):
                     sleeptime = self.dup_interval
                 time.sleep(sleeptime)
@@ -568,7 +567,8 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         for i in bound:
             if i in data:
                 if ( bound[i] != data[i]):
-                    logerr("%s expexted in unit %s but is in %s" % (i, bound[i], data[i]))
+                    logerr("%s expexted in unit %s but is in %s" %
+                           (i, bound[i], data[i]))
                     return True
         return False
 
