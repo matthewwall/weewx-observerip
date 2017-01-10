@@ -20,7 +20,7 @@ weewx driver for the Ambient ObserverIP weather station
 
 This driver has two modes: direct or indirect.  Direct mode reads data directly
 from the ObserverIP station.  Indirect mode reads data from a local file that
-is updated by a separate process that sniffs the network for ObserverIP data.
+is updated by a separate process that captures data from the ObserverIP.
 
 To see the configuration options:
 
@@ -36,7 +36,8 @@ broadcasts must be able to get from one to the other.
 
 ### Indirect Mode
 
-To run in indirect mode:
+Indirect mode uses a PHP script on a local Apache web server to capture the
+data from the observer.
 
 - set the mode in weewx.conf
 
