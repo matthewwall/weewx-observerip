@@ -1,9 +1,7 @@
 #!/usr/bin/python
 # Copyright 2015 David Malick
-"""weewx driver for Ambient ObserverIP
-
-To use this driver, see readme.txt
-"""
+# minor modifications by Matthew Wall
+"""weewx driver for Ambient ObserverIP"""
 
 from __future__ import with_statement
 import time
@@ -19,7 +17,7 @@ import weewx.drivers
 from weeutil.weeutil import to_bool
 
 DRIVER_NAME = 'ObserverIP'
-DRIVER_VERSION = '0.5mw'
+DRIVER_VERSION = '0.6'
 
 if weewx.__version__ < "3":
     raise weewx.UnsupportedFeature("weewx 3 is required, found %s" %
@@ -27,7 +25,6 @@ if weewx.__version__ < "3":
 
 def logmsg(dst, msg):
     syslog.syslog(dst, 'observerip: %s' % msg)
-    #sys.stdout.write('observerip: %s\n' % msg)
 
 def logdbg(msg):
     logmsg(syslog.LOG_DEBUG, msg)
@@ -62,10 +59,9 @@ def confeditor_loader():
 def configurator_loader(_):
     return ObserverIPConfigurator()
 
+
 class OpserverIPHardware():
-    """
-    Interface to communicate directly with ObserverIP
-    """
+    """Interface to communicate directly with ObserverIP"""
 
     UDP_PORT = 25122
     MESSAGE = "ASIXXISA\x00"
@@ -85,7 +81,7 @@ class OpserverIPHardware():
     }
 
     def __init__(self, **stn_dict):
-        self.versionmap = {'wh2600USA_v2.2.0':'3.0.0'}
+        self.versionmap = {'wh2600USA_v2.2.0': '3.0.0'}
         self.hostname = stn_dict.get('hostname',None)
         self.max_tries = int(stn_dict.get('max_tries', 5))
         self.retry_wait = int(stn_dict.get('retry_wait', 2))
@@ -100,8 +96,7 @@ class OpserverIPHardware():
             udp_addr = "255.255.255.255"
         else:
             udp_addr = self.hostname
-        sock = socket.socket(socket.AF_INET, # Internet
-                             socket.SOCK_DGRAM) # UDP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP socket
         if self.hostname is None:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         for count in range(self.max_tries):
@@ -241,19 +236,23 @@ class OpserverIPHardware():
     def boundcheck(self, bound, data):
         for i in data:
             if i in bound:
-                if ( bound[i][0](data[i]) < bound[i][0](bound[i][1]) or bound[i][0](data[i]) > bound[i][0](bound[i][2])):
-                    logerr("%s bound error: range: %s-%s value: %s" % (i, bound[i][1], bound[i][2], data[i] ))
+                if (bound[i][0](data[i]) < bound[i][0](bound[i][1]) or
+                    bound[i][0](data[i]) > bound[i][0](bound[i][2])):
+                    logerr("%s bound error: range: %s-%s value: %s" %
+                           (i, bound[i][1], bound[i][2], data[i]))
                     exit(1)
             else:
                 logerr("%s not bound" % i)
                 exit(1)
 
-    def getnetworksettings(self, Readable=False):
-        return self.page_to_dict('http://%s/bscsetting.htm' % self.ipaddr(), not Readable)
+    def getnetworksettings(self, readable=False):
+        return self.page_to_dict(
+            'http://%s/bscsetting.htm' % self.ipaddr(), not readable)
 
     def setnetworksettings(self):
-        response = urllib2.urlopen("http://%s/bscsetting.htm" % self.ipaddr(),
-                                   self.dict_to_param(calibdata) + "&Apply=Apply")
+        response = urllib2.urlopen(
+            "http://%s/bscsetting.htm" % self.ipaddr(),
+            self.dict_to_param(calibdata) + "&Apply=Apply")
     def setnetworkdefault(self):
         #print 'Not implemented'
         pass
@@ -272,17 +271,20 @@ class OpserverIPHardware():
 
     def setidpasswd(self, wuid, passwd):
         """set wunderground id and passwd"""
-        response = urllib2.urlopen("http://%s/weather.htm" % self.ipaddr(),
-                                   "stationID=%s&stationPW=%s&Apply=Apply" % (wuid, passwd))
+        response = urllib2.urlopen(
+            "http://%s/weather.htm" % self.ipaddr(),
+            "stationID=%s&stationPW=%s&Apply=Apply" % (wuid, passwd))
 
     def getstationsettings(self, readable=False):
-        return self.page_to_dict('http://%s/station.htm' % self.ipaddr(),not readable)
+        return self.page_to_dict(
+            'http://%s/station.htm' % self.ipaddr(), not readable)
 
     def setstationsettings(self, settings):
         if 'WRFreq' in settings:
             del settings['WRFreq']
-        response = urllib2.urlopen("http://%s/station.htm" % self.ipaddr(),
-                                   self.dict_to_param(settings) + "&Apply=Apply")
+        response = urllib2.urlopen(
+            "http://%s/station.htm" % self.ipaddr(),
+            self.dict_to_param(settings) + "&Apply=Apply")
 
     def data(self):
         return self.page_to_dict('http://%s/livedata.htm' % self.ipaddr())
@@ -293,8 +295,9 @@ class OpserverIPHardware():
     def setcalibration(self, calibdata):
         self.boundcheck(self.CALIBRATIONBOUND ,calibdata)
         try:
-            response = urllib2.urlopen("http://%s/correction.htm" % self.ipaddr(),
-                                       self.dict_to_param(calibdata) + "&Apply=Apply")
+            response = urllib2.urlopen(
+                "http://%s/correction.htm" % self.ipaddr(),
+                self.dict_to_param(calibdata) + "&Apply=Apply")
             pass
         except urllib2.URLError:
             pass
@@ -305,9 +308,8 @@ class OpserverIPHardware():
 # =============================================================================
 
 class ObserverIPDriver(weewx.drivers.AbstractDevice):
-    """
-    weewx driver to download data from ObserverIP
-    """
+    """weewx driver to download data from ObserverIP"""
+
     expected_units = {'unit_Wind': 'mph',
                       'u_Rainfall': 'in',
                       'unit_Pressure': 'inhg',
@@ -424,33 +426,35 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         self.max_tries = int(stn_dict.get('max_tries', 5))
         self.retry_wait = int(stn_dict.get('retry_wait', 2))
         self.mode = stn_dict.get('mode', 'direct')
-        self.check_calibration = to_bool(stn_dict.get('check_calibration',False))
+        self.check_calibration = to_bool(
+            stn_dict.get('check_calibration', False))
         self.set_calibration = to_bool(stn_dict.get('set_calibration', False))
         self.lastrain = None
         self.lastpacket = 0
 
         if self.mode == 'direct':
-            self.obshardware = OpserverIPHardware(**stn_dict)
+            self._station = OpserverIPHardware(**stn_dict)
             if self.chkunits(self.expected_units):
-                logerr("calibration error: %s is expexted to be %f but is %f" % 
-                          (i, to_float(calibdata[i]), to_float(stcalib[i])))
+                logerr("calibration error: %s is expexted to be %f but is %f" %
+                       (i, to_float(calibdata[i]), to_float(stcalib[i])))
                 raise Exception("Station units not set correctly")
-            if self.obshardware.version() in self.directmap:
-                self.map = self.directmap[self.obshardware.version()]
+            if self._station.version() in self.directmap:
+                self.map = self.directmap[self._station.version()]
             else:
-                loginf("Unknown firmware version: %s" % self.obshardware.version())
+                loginf("Unknown firmware version: %s" %
+                       self._station.version())
                 self.map = self.directmap['default']
         else:
             self.map = self.directmap['wu']
             if self.check_calibration:
-                self.obshardware = OpserverIPHardware(**stn_dict)
+                self._station = OpserverIPHardware(**stn_dict)
                 if self.chkunits(self.expected_units):
                     raise Exception("Station units not set correctly")
 
         if 'calibration' in stn_dict and self.check_calibration:
             if self.chkcalib(stn_dict['calibration']):
                 if(self.set_calibration):
-                    self.obshardware.setcalibration(stn_dict['calibration'])
+                    self._station.setcalibration(stn_dict['calibration'])
                     if self.chkcalib(stn_dict['calibration']):
                         raise Exception("Setting calibration unsuccessful")
                 else:
@@ -476,10 +480,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
                 if self.mode == 'direct':
                     sleeptime = self.poll_interval
                 else:
-                    #print time.time()
-                    #print to_int(packet['dateTime'])
                     sleeptime = self.poll_interval - time.time() + int(packet['dateTime'])
-                    #print sleeptime
                 if ( sleeptime < 0 ):
                     sleeptime = self.dup_interval
                 time.sleep(sleeptime)
@@ -508,7 +509,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         data = dict()
         for count in range(self.max_tries):
             try:
-                data = self.obshardware.data()
+                data = self._station.data()
                 # added rounding, the epoch is already to large but this
                 # will make it more consistent
                 data['epoch'] = int(time.time() + 0.5 )
@@ -556,7 +557,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         return 0 if val == 'Normal' else 1
 
     def chkcalib(self, calibdata):
-        stcalib = self.obshardware.getcalibration()
+        stcalib = self._station.getcalibration()
         for i in calibdata:
             if to_float(calibdata[i]) != to_float(stcalib[i]):
                 logerr("calibration error: %s is expexted to be %f but is %f" % 
@@ -565,7 +566,7 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
         return False
 
     def chkunits(self, bound):
-        data = self.obshardware.getstationsettings(True);
+        data = self._station.getstationsettings(True);
         for i in bound:
             if i in data:
                 if ( bound[i] != data[i]):
@@ -582,6 +583,9 @@ class ObserverIPConfEditor(weewx.drivers.AbstractConfEditor):
         return """
 [ObserverIP]
     # This section is for the weewx ObserverIP driver
+
+    # The driver to use:
+    driver = user.observerip
 
     # hostname - hostname or IP address of the ObserverIP, not required
 
@@ -614,9 +618,6 @@ class ObserverIPConfEditor(weewx.drivers.AbstractConfEditor):
     #                   only meaningful if check_calibration is true
     set_calibration = false
 
-    # The driver to use:
-    driver = user.observerip
-
     # The calibration the driver expects from the station, only useful
     # if check_calibration is set. Items that are not set, are not checked.
     [[calibration]]
@@ -643,10 +644,6 @@ class ObserverIPConfigurator(weewx.drivers.AbstractConfigurator):
     def description(self):
         return """Configures the Ambient ObserverIP"""
 
-    #@property
-    #def usage(self):
-    #    return """Usage: """
-
     def add_options(self, parser):
         super(ObserverIPConfigurator, self).add_options(parser)
 
@@ -662,19 +659,19 @@ class ObserverIPConfigurator(weewx.drivers.AbstractConfigurator):
 
     def do_options(self, options, parser, config_dict, prompt):
         driver_dict = config_dict['ObserverIP']
-        obshardware = OpserverIPHardware(**driver_dict)
+        station = OpserverIPHardware(**driver_dict)
 
         if options.findobserver:
-            sys.stdout.write("http://%s\n" % obshardware.ipaddr())
+            sys.stdout.write("http://%s\n" % station.ipaddr())
             try:
-                hostname = socket.gethostbyaddr(obshardware.ipaddr())[0]
+                hostname = socket.gethostbyaddr(station.ipaddr())[0]
                 print "or"
                 sys.stdout.write("http://%s\n" % hostname)
             except:
                 pass
 
         if options.getdata:
-            data = obshardware.data()
+            data = station.data()
             for obs in data:
                 sys.stdout.write("%s=%s\n" % (obs, data[obs]))
 
@@ -718,4 +715,3 @@ if __name__ == "__main__":
     station = ObserverIPDriver(mode=mode, xferfile=options.xferfile)
     for p in station.genLoopPackets():
         print weeutil.weeutil.timestamp_to_string(p['dateTime']), p
-
