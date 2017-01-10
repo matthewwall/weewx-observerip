@@ -1,24 +1,20 @@
 # weewx-observerip
+
 weewx driver for the Ambient ObserverIP weather station
-
-mwall modifications to David Malick's ObserverIP driver for weewx.
-
-David's driver is here:
- https://github.com/dkmcode/weewx-observerip
 
 ## Installation
 
 1) Run the extension installer:
 
-wee_extension --install weewx-observerip.tar.gz
+    wee_extension --install weewx-observerip.tar.gz
 
 2) Choose the observerip driver:
 
-wee_config --reconfigure --driver=user.observerip
+    wee_config --reconfigure --driver=user.observerip
 
 3) Start weewx
 
-sudo /etc/init.d/weewx start
+    `sudo /etc/init.d/weewx start`
 
 ## Configuration
 
@@ -56,3 +52,13 @@ The file must be writable by the web server and readable by weewx.
 
 Relative Pressure Offset in the calibration tab of the station setup must
 be set to 0.
+
+## Credits
+
+This driver is derived from an implementation by David Malick, who posted the
+original version in April 2015.  This fork addresses a few minor issues and
+fixes the installation script to work with the wee_extension and wee_config
+tools.
+
+David's driver is here:
+ https://github.com/dkmcode/weewx-observerip
