@@ -58,6 +58,9 @@ def to_float(x):
     except ValueError:
         return None
 
+def _norm(val):
+    return 0 if val == 'Normal' else 1
+
 
 class ObserverIPStation():
     """Interface to communicate directly with ObserverIP"""
@@ -307,14 +310,14 @@ class ObserverIPStation():
 class ObserverIPDriver(weewx.drivers.AbstractDevice):
     """weewx driver to download data from ObserverIP"""
 
-    expected_units = {'unit_Wind': 'mph',
-                      'u_Rainfall': 'in',
-                      'unit_Pressure': 'inhg',
-                      'u_Temperature': 'degF',
-                      'unit_Solar': 'w/m2'}
+    EXPECTED_UNITS = {
+        'unit_Wind': 'mph',
+        'u_Rainfall': 'in',
+        'unit_Pressure': 'inhg',
+        'u_Temperature': 'degF',
+        'unit_Solar': 'w/m2'}
 
-# Does not work using function norm
-    XXXdirectmap = {
+    SENSOR_MAP = {
         'wh2600USA_v2.2.0' : {
             'dateTime' : ('epoch', to_int),
             'inTemp' : ('inTemp', to_float),
@@ -328,8 +331,8 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
             'radiation' : ('solarrad', to_float),
             'UV' : ('uvi', to_float),
             'rain' : ('rainofyearly', to_float),
-            'inTempBatteryStatus' : ('inBattSta', ),
-            'outTempBatteryStatus' : ('outBattSta1', )
+            'inTempBatteryStatus' : ('inBattSta', _norm),
+            'outTempBatteryStatus' : ('outBattSta1', _norm)
         },
         'default' : {
             'dateTime' : ('epoch', to_int),
@@ -367,56 +370,6 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
     def __init__(self, **stn_dict):
         loginf("version is %s" % DRIVER_VERSION)
 
-        self.directmap = {
-            'wh2600USA_v2.2.0' : {
-                'dateTime' : ('epoch', to_int),
-                'inTemp' : ('inTemp', to_float),
-                'inHumidity' : ('inHumi', to_float),
-                'pressure' : ('AbsPress', to_float),
-                'outTemp' : ('outTemp',to_float),
-                'outHumidity' : ('outHumi', to_float),
-                'windDir' : ('windir', to_float),
-                'windSpeed' : ('avgwind', to_float),
-                'windGust' : ('gustspeed', to_float),
-                'radiation' : ('solarrad', to_float),
-                'UV' : ('uvi', to_float),
-                'rain' : ('rainofyearly', to_float),
-                'inTempBatteryStatus' : ('inBattSta', self.norm),
-                'outTempBatteryStatus' : ('outBattSta1', self.norm)
-            },
-            'default' : {
-                'dateTime' : ('epoch', to_int),
-                'inTemp' : ('inTemp', to_float),
-                'inHumidity' : ('inHumi', to_float),
-                'pressure' : ('AbsPress', to_float),
-                'outTemp' : ('outTemp',to_float),
-                'outHumidity' : ('outHumi', to_float),
-                'windDir' : ('windir', to_float),
-                'windSpeed' : ('avgwind', to_float),
-                'windGust' : ('gustspeed', to_float),
-                'radiation' : ('solarrad', to_float),
-                'UV' : ('uvi', to_float),
-                'rain' : ('rainofyearly', to_float),
-            },
-            'wu' : {
-                'dateTime' : ('epoch', to_int),
-                'outTemp' : ('tempf',to_float),
-                'outHumidity' : ('humidity', to_float),
-                'dewpoint' : ('dewptf', to_float),
-                'windchill' : ('windchillf', to_float),
-                'windDir' : ('winddir', to_float),
-                'windSpeed' : ('windspeedmph', to_float),
-                'windGust' : ('windgustmph', to_float),
-                'rain' : ('yearlyrainin', to_float),
-                'radiation' : ('solarradiation', to_float),
-                'UV' : ('UV', to_float),
-                'inTemp' : ('indoortempf', to_float),
-                'inHumidity' : ('indoorhumidity', to_float),
-                'pressure' : ('baromin', to_float),
-                'txBatteryStatus' : ('lowbatt', to_float),
-            }
-        }
-
         self.xferfile = stn_dict['xferfile']
         self.poll_interval = float(stn_dict.get('poll_interval', 10))
         self.dup_interval = float(stn_dict.get('dup_interval', 5))
@@ -431,21 +384,21 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
 
         if self.mode == 'direct':
             self._station = ObserverIPStation(**stn_dict)
-            if self.chkunits(self.expected_units):
+            if self.chkunits(ObserverIPDriver.EXPECTED_UNITS):
                 logerr("calibration error: %s is expexted to be %f but is %f" %
                        (i, to_float(calibdata[i]), to_float(stcalib[i])))
                 raise Exception("Station units not set correctly")
-            if self._station.version() in self.directmap:
-                self.map = self.directmap[self._station.version()]
+            if self._station.version() in ObserverIPDriver.SENSOR_MAP:
+                self.map = ObserverIPDriver.SENSOR_MAP[self._station.version()]
             else:
                 loginf("Unknown firmware version: %s" %
                        self._station.version())
-                self.map = self.directmap['default']
+                self.map = ObserverIPDriver.SENSOR_MAP['default']
         else:
-            self.map = self.directmap['wu']
+            self.map = ObserverIPDriver.SENSOR_MAP['wu']
             if self.check_calibration:
                 self._station = ObserverIPStation(**stn_dict)
-                if self.chkunits(self.expected_units):
+                if self.chkunits(ObserverIPDriver.EXPECTED_UNITS):
                     raise Exception("Station units not set correctly")
 
         if 'calibration' in stn_dict and self.check_calibration:
@@ -545,10 +498,6 @@ class ObserverIPDriver(weewx.drivers.AbstractDevice):
                        (int(packet['dateTime']) - self.last_datetime))
                 self.last_datetime = packet['dateTime']
         return packet
-
-    @staticmethod
-    def norm(val):
-        return 0 if val == 'Normal' else 1
 
     def chkcalib(self, calibdata):
         stcalib = self._station.getcalibration()
