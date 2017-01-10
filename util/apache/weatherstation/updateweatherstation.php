@@ -3,7 +3,7 @@
 # There has been absolutly no thought give to security !!!!
 # Do not expose this to the outside world without looking at it first!!!!!
 
-xferfile=/tmp/hacktest
+xferfile=/var/tmp/observer_data
 id=
 passwd=
 user_agent="Mozilla/4.0"

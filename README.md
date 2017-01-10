@@ -14,7 +14,7 @@ weewx driver for the Ambient ObserverIP weather station
 
 3) Start weewx
 
-    `sudo /etc/init.d/weewx start`
+    sudo /etc/init.d/weewx start
 
 ## Configuration
 
@@ -23,7 +23,8 @@ from the ObserverIP station.  Indirect mode reads data from a local file that
 is updated by a separate process that sniffs the network for ObserverIP data.
 
 To see the configuration options:
-  wee_device --defaultconfig
+
+    wee_device --default-config
 
 ### Direct Mode
 
@@ -36,17 +37,25 @@ broadcasts must be able to get from one to the other.
 ### Indirect Mode
 
 To run in indirect mode:
-- set mode=indirect in the [ObserverIP] section of weewx.conf
-- copy util/apache/conf.d/weatherstation-intercept.conf to the apache
-  configuration directory, /etc/httpd/conf.d on most systems
-- make sure the path in that file is reasonable
-- create directory /var/www/weatherstation
-- copy util/apache/weatherstation/updateweatherstation.php
-  to /var/www/weatherstation
-- edit both the updateweatherstation.php and weewx.conf
-- set xferfile in each to point to the same file
 
-The file must be writable by the web server and readable by weewx.
+- set the mode in weewx.conf
+
+    [ObserverIP]
+        driver = user.observerip
+        mode = indirect
+        ...
+
+- install the apache intercept configuration
+
+    sudo cp util/apache/conf.d/weatherstation-intercept.conf /etc/apache/conf.d
+
+- create the weatherstation directory directory
+
+    sudo mkdir /var/www/html/weatherstation
+
+- install the php script
+
+    sudo cp util/apache/weatherstation/updateweatherstation.php /var/www/html/weatherstation
 
 ## Notes
 
